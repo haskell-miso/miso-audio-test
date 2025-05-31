@@ -174,7 +174,8 @@ handleUpdate (ActionAskVolume str) =
       io_ (setVolume (p^.playingSong^.songAudio) vol)
       modelPlaying %= fmap (\p' -> p' & playingVolume .~ vol)
 
-handleUpdate (ActionSetVolume vol) =
+handleUpdate (ActionSetVolume vol) = 
+  -- modelPlaying . playingVolume ?= vol
   modelPlaying %= fmap (\p -> p & playingVolume .~ vol)
 
 handleUpdate (ActionSetEnded end) =
@@ -191,20 +192,13 @@ main :: IO ()
 main = run $ do
   songs <- zipWith Song thePlaylist <$> traverse newAudio thePlaylist
   let model = mkModel songs
-  startComponent Component
-    { model = model
-    , update = handleUpdate
-    , view = handleView
-    , subs = []
-    , events = defaultEvents
-    , styles = []
-    , mountPoint = Nothing
-    , logLevel = Off
-    , initialAction = Nothing
+  let app = defaultComponent model handleUpdate handleView
+  startComponent app
+    { events = defaultEvents <> audioVideoEvents
+    , logLevel = DebugAll
     }
 
 #ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
 #endif
-
 
